@@ -1,0 +1,29 @@
+# Sample pre-generated plan for test_replan_task.
+# Simulates what llm_planner_node would produce for the take-order scenario.
+# Step 1 (navigate_to_customer) is marked as failed to trigger a replan.
+
+goal: "Greet the customer and take their order"
+context: |
+  NAO robot acting as a waiter in a restaurant.
+  The robot is at the entrance. There are 5 tables; customers sit and wait.
+steps:
+  - step_id: 0
+    description: "Navigate to the customer's table"
+    bt_prompt: >
+      Navigate the robot from the entrance to table 3, where the customer is seated.
+      Use NavigateTo with target 'table_3'. Succeed when the robot reaches the table.
+  - step_id: 1
+    description: "Greet the customer"
+    bt_prompt: >
+      Speak a polite greeting to the customer at the table.
+      Use Speak with text 'Hello! Welcome, I am your waiter today. How can I help you?'.
+  - step_id: 2
+    description: "Ask for the order"
+    bt_prompt: >
+      Ask the customer what they would like to order.
+      Use Ask with question 'What would you like to order today?' and store the answer.
+  - step_id: 3
+    description: "Confirm the order"
+    bt_prompt: >
+      Read back the order to the customer and ask for confirmation.
+      Use Confirm to verify the order with the customer before sending it to the kitchen.

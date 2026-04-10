@@ -1,0 +1,8 @@
+# Sample goal file for test_plan_task
+# Loaded as launch arguments: goal and context
+
+goal: "Greet the customer and take their order"
+context: |
+  NAO robot acting as a waiter in a restaurant.
+  The robot is at the entrance. There are 5 tables; customers sit and wait.
+  The robot must approach the customer, greet them politely, and collect their order.

@@ -1,0 +1,10 @@
+# StartGoal.srv
+# Sent to the orchestrator to start executing a high-level goal.
+# The orchestrator plans, generates BTs step by step, executes them, and replans on failure.
+string goal       # High-level goal description
+string context    # Optional context: robot role, environment, constraints, current state.
+                  # Helps the planner break the goal into relevant steps.
+                  # (BT node capabilities are provided separately via capabilities_yaml param)
+---
+bool accepted     # False if orchestrator is already busy
+string message

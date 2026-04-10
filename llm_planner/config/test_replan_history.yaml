@@ -1,0 +1,61 @@
+# Sample plan for test_replan_history demo.
+# Simulates a scenario where step 0 failed once (could not navigate)
+# and the current attempt (asking customers to approach) also failed.
+# The LLM must propose a third, genuinely different strategy.
+
+failed_step: 0
+previous_failures:
+  - "The robot could not navigate to the nearest table"
+current_failure: >-
+  The robot asked customers to approach the counter but nobody responded.
+
+goal: "Greet the customer and take their order"
+context: |
+  NAO robot acting as a waiter in a restaurant.
+  The robot is at the entrance. There are 5 tables; customers sit and wait.
+steps:
+  - step_id: 0
+    description: "Ask customers to approach the robot"
+    objective:
+      name: "Request customer approach"
+      description: >
+        NAO robot acting as a waiter in a restaurant. The robot is at the entrance.
+        There are 5 tables; customers sit and wait.
+        Overall goal: Greet the customer and take their order.
+        In this step: Use the speaker to ask customers to come to the counter.
+      steps:
+        - step: "Use Speak action with text 'Please come to the counter, I will be right with you.'"
+      constraints:
+        none
+      style:
+        - polite
+  - step_id: 1
+    description: "Greet the customer"
+    objective:
+      name: "Greet customer"
+      description: >
+        NAO robot acting as a waiter in a restaurant. The robot is at the entrance.
+        There are 5 tables; customers sit and wait.
+        Overall goal: Greet the customer and take their order.
+        In this step: Speak a polite greeting to the customer at the table.
+      steps:
+        - step: "Use Speak action with text 'Hello! I am your waiter today.'"
+      constraints:
+        none
+      style:
+        - polite
+  - step_id: 2
+    description: "Take the customer's order"
+    objective:
+      name: "Take order"
+      description: >
+        NAO robot acting as a waiter in a restaurant. The robot is at the entrance.
+        There are 5 tables; customers sit and wait.
+        Overall goal: Greet the customer and take their order.
+        In this step: Ask the customer what they would like to order.
+      steps:
+        - step: "Use Ask action with question 'What would you like to order?'"
+      constraints:
+        none
+      style:
+        - attentive

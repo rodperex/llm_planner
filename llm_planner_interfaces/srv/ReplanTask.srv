@@ -1,0 +1,14 @@
+# ReplanTask.srv
+# Generates a new YAML plan from the current state after a step failure.
+# The new plan only covers the remaining work needed to reach the original goal.
+string goal            # Original high-level goal
+string plan_yaml       # Current plan YAML (original or previous replan)
+int32 failed_step      # 0-based index of the step that failed
+string failure_reason  # Why it failed: world error, unavailable BT node, timeout, etc.
+                       # The LLM uses this to avoid the same failure in the new plan
+string[] previous_failures  # Failure reasons from earlier replans of the same step
+                            # (empty on first replan; grows with each retry)
+---
+bool success
+string new_plan_yaml   # New YAML plan starting from current state
+string message

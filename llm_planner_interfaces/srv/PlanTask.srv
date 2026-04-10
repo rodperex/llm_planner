@@ -1,0 +1,11 @@
+# PlanTask.srv
+# Generates a YAML execution plan from a high-level goal using an LLM.
+# The plan contains sequential steps, each with a description and bt_prompt
+# that will be used to generate a Behavior Tree via llm_bt_builder.
+string goal          # High-level goal description
+string context       # Optional context: robot role, environment, constraints, current state.
+                     # Helps the LLM break the goal into relevant sequential steps.
+---
+bool success
+string plan_yaml     # YAML plan content (see plan_template.yaml for format)
+string message
