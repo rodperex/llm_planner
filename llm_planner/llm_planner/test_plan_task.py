@@ -39,11 +39,13 @@ class TestPlanTaskNode(Node):
         self.declare_parameter('goal', '')
         self.declare_parameter('context', '')
         self.declare_parameter('skills', [''])
+        self.declare_parameter('mission_name', '')
 
         self._goal = self.get_parameter('goal').get_parameter_value().string_value
         self._task_context = self.get_parameter('context').get_parameter_value().string_value
         skills_raw = self.get_parameter('skills').get_parameter_value().string_array_value
         self._skills = [s for s in skills_raw if s.strip()]
+        self._mission_name = self.get_parameter('mission_name').get_parameter_value().string_value
 
         if not self._goal:
             self.get_logger().error("Parameter 'goal' is required")
@@ -58,6 +60,7 @@ class TestPlanTaskNode(Node):
         req.goal = self._goal
         req.context = self._task_context
         req.skills = self._skills
+        req.mission_name = self._mission_name
 
         future = self._client.call_async(req)
         future.add_done_callback(self._on_response)

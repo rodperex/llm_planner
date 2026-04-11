@@ -1,0 +1,33 @@
+# Sample goal file for test_plan_task — mission 2
+# Scenario: A service robot guide in a museum detects a lost visitor, asks which
+# exhibit they want, escorts them there, and reports back to the information desk.
+# Demonstrates inter-step data flow: the desired exhibit captured in step 1 is
+# consumed in step 2 (navigate) and step 4 (report).
+
+mission_name: "museum_guide"
+goal: "Find a lost visitor, escort them to the exhibit they are looking for, and report back to the information desk"
+context: |
+  A service robot acting as a guide in a museum.
+  The robot patrols the entrance hall. Visitors sometimes get lost looking for a
+  specific exhibit.
+  Physical behaviour requirements:
+  - Whenever the robot addresses a person (greets, asks a question, confirms, or reports),
+    it MUST first face that person directly (turn towards them) before speaking.
+  - When a lost visitor is detected, the robot MUST navigate to the visitor's location
+    before speaking to them. Do not skip the approach step.
+  - When asking the visitor to follow, the robot MUST explicitly tell the visitor to
+    follow it before starting to navigate to the exhibit.
+  - When navigating to the exhibit, the robot moves ahead and the visitor follows.
+    The robot does NOT need to search for the visitor during navigation.
+  - Upon arrival at the exhibit, the robot MUST turn towards the visitor (face them)
+    before confirming arrival.
+  - After confirming the visitor has arrived, the robot navigates back to the
+    information desk alone and verbally reports the completed assistance to the desk staff.
+  The museum has three wings: Ancient History (left), Modern Art (right), and
+  Science (back). The information desk is at the main entrance.
+skills:
+  - "Navigate to a location"
+  - "Speak using text-to-speech"
+  - "Listen and transcribe speech using speech-to-text"
+  - "Detect and identify persons"
+  - "Extract specific information from text"

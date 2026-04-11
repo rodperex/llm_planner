@@ -10,6 +10,7 @@ string[] previous_failures  # Failure reasons from earlier replans of the same s
                             # (empty on first replan; grows with each retry)
 string[] skills        # Capabilities the robot has. Preserved from the original plan
                        # so the LLM replans within the same capability envelope.
+string mission_name    # Optional short identifier used to prefix saved plan filenames.
 ---
 bool success
 string new_plan_yaml   # New YAML plan starting from current state

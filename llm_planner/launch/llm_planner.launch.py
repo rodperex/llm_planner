@@ -49,7 +49,10 @@ def generate_launch_description():
     node_type_arg = DeclareLaunchArgument(
         'node_type',
         default_value='normal',
-        description='Planner variant: "normal" (generate only) or "agent" (generate + validate)',
+        description=(
+            'Planner variant: "normal" (generate only), "agent" (generate + validate), '
+            '"parallel" (agent + parallel sub-actions in objective.steps)'
+        ),
     )
 
     # ── Normal node ───────────────────────────────────────────────────────────
@@ -86,6 +89,23 @@ def generate_launch_description():
         ),
     )
 
+    # ── Parallel-aware agent node ─────────────────────────────────────────────
+    parallel_node = Node(
+        package='llm_planner',
+        executable='llm_planner_agent_parallel_node',
+        name='llm_planner_agent_parallel_node',
+        output='screen',
+        emulate_tty=True,
+        parameters=[{
+            'llm_provider': LaunchConfiguration('provider'),
+            'llm_model_id': LaunchConfiguration('model'),
+            'llm_api_key':  LaunchConfiguration('key'),
+        }],
+        condition=IfCondition(
+            PythonExpression(["'", LaunchConfiguration('node_type'), "' == 'parallel'"])
+        ),
+    )
+
     return LaunchDescription([
         provider_arg,
         model_arg,
@@ -93,4 +113,5 @@ def generate_launch_description():
         node_type_arg,
         normal_node,
         agent_node,
+        parallel_node,
     ])

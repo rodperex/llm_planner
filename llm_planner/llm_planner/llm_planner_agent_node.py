@@ -109,6 +109,7 @@ class LLMPlannerAgentNode(Node):
         goal    = request.goal.strip()
         context = request.context.strip()
         skills  = [s for s in request.skills if s.strip()]
+        mission_name = request.mission_name.strip()
         self.get_logger().info(f'[plan #{call_id}] goal="{goal}"')
 
         skills_block = ''
@@ -143,7 +144,8 @@ class LLMPlannerAgentNode(Node):
             f'[plan #{call_id}] {response.message}\n' +
             ''.join(f'  [{s["step_id"]}] {s.get("description", "?")}\n' for s in steps)
         )
-        self._save_plan(plan_yaml, prefix='agent_plan', goal=goal, skills=skills)
+        self._save_plan(plan_yaml, prefix=self._plan_prefix(), goal=goal, skills=skills,
+                        mission_name=mission_name)
         return response
 
     def replan_task_callback(self, request, response):
@@ -156,6 +158,7 @@ class LLMPlannerAgentNode(Node):
         failure_reason    = request.failure_reason.strip()
         previous_failures = list(request.previous_failures)
         skills            = [s for s in request.skills if s.strip()]
+        mission_name      = request.mission_name.strip()
         self.get_logger().info(
             f'[replan #{call_id}] goal="{goal}" failed_step={failed_step} '
             f'reason="{failure_reason}" previous_attempts={len(previous_failures)}'
@@ -240,11 +243,22 @@ class LLMPlannerAgentNode(Node):
             ''.join(f'  [{s["step_id"]}] {s.get("description", "?")}\n' for s in new_steps)
         )
         self._save_plan(
-            plan_yaml, prefix='agent_replan', goal=goal, skills=skills,
+            plan_yaml, prefix=self._replan_prefix(), goal=goal, skills=skills,
             failed_step=failed_step, failure_reason=failure_reason,
             previous_failures=previous_failures,
+            mission_name=mission_name,
         )
         return response
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Filename prefix hooks (overridable by subclasses)
+    # ─────────────────────────────────────────────────────────────────────────
+
+    def _plan_prefix(self):
+        return 'agent_plan'
+
+    def _replan_prefix(self):
+        return 'agent_replan'
 
     # ─────────────────────────────────────────────────────────────────────────
     # Core validation loop
@@ -383,6 +397,33 @@ class LLMPlannerAgentNode(Node):
                             f'Step {sid} uses skill "{skill}" which is NOT in the '
                             f'robot capabilities list.'
                         )
+
+        # Cross-step I/O consistency: every input key must be produced by a prior step
+        available_outputs = set()
+        for i, step in enumerate(steps):
+            sid = step.get('step_id', i)
+            obj = step.get('objective', {}) or {}
+            inputs = obj.get('inputs', []) or []
+            outputs = obj.get('outputs', []) or []
+
+            if not isinstance(inputs, list):
+                return False, f'Step {sid} objective.inputs must be a list of strings.'
+            if not isinstance(outputs, list):
+                return False, f'Step {sid} objective.outputs must be a list of strings.'
+
+            for key in inputs:
+                if not isinstance(key, str) or not key.strip():
+                    return False, f'Step {sid} objective.inputs contains a non-string entry.'
+                if key not in available_outputs:
+                    return False, (
+                        f'Step {sid} declares input "{key}" but no previous step '
+                        f'declares it as an output. Add an earlier step that writes "{key}".'
+                    )
+
+            for key in outputs:
+                if not isinstance(key, str) or not key.strip():
+                    return False, f'Step {sid} objective.outputs contains a non-string entry.'
+                available_outputs.add(key)
 
         return True, 'OK'
 
@@ -618,11 +659,13 @@ class LLMPlannerAgentNode(Node):
         return os.path.join(os.getcwd(), 'generated_plans')
 
     def _save_plan(self, plan_yaml, *, prefix, goal, skills=None,
-                   failed_step=None, failure_reason=None, previous_failures=None):
+                   failed_step=None, failure_reason=None, previous_failures=None,
+                   mission_name=''):
         plans_dir = self._get_src_plans_path()
         os.makedirs(plans_dir, exist_ok=True)
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename  = f'{prefix}_{timestamp}_{self.llm_model_id}.yaml'
+        prefix_part = f'{mission_name}_{prefix}' if mission_name else prefix
+        filename  = f'{prefix_part}_{timestamp}_{self.llm_model_id}.yaml'
         out_path  = os.path.join(plans_dir, filename)
         try:
             with open(out_path, 'w', encoding='utf-8') as f:

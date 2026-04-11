@@ -56,6 +56,7 @@ class TestReplanHistoryNode(Node):
             current_failure = data.get('current_failure', '')
             skills_raw = data.get('skills', [])
             skills = [str(s) for s in skills_raw if str(s).strip()]
+            mission_name = data.get('mission_name', '')
         except Exception as e:
             self.get_logger().error(f"Could not load plan file '{plan_file}': {e}")
             raise SystemExit(1)
@@ -81,6 +82,7 @@ class TestReplanHistoryNode(Node):
         req.failure_reason = current_failure
         req.previous_failures = previous_failures
         req.skills = skills
+        req.mission_name = mission_name
 
         future = self._client.call_async(req)
         future.add_done_callback(self._on_response)

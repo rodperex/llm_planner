@@ -68,6 +68,7 @@ class TestReplanTaskNode(Node):
                 skills = [str(s) for s in skills if str(s).strip()]
             else:
                 skills = []
+            mission_name = doc.get('mission_name', '')
         except yaml.YAMLError as e:
             self.get_logger().error(f"Invalid YAML in plan file: {e}")
             raise SystemExit(1)
@@ -91,6 +92,7 @@ class TestReplanTaskNode(Node):
         req.failed_step = failed_step
         req.failure_reason = failure_reason
         req.skills = skills
+        req.mission_name = mission_name
 
         future = self._client.call_async(req)
         future.add_done_callback(self._on_response)

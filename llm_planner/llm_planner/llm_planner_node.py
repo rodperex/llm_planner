@@ -72,6 +72,7 @@ class LLMPlannerNode(Node):
         goal = request.goal.strip()
         context = request.context.strip()
         skills = [s for s in request.skills if s.strip()]
+        mission_name = request.mission_name.strip()
         self.get_logger().info(f'[plan #{call_id}] goal="{goal}"')
 
         skills_block = ''
@@ -105,7 +106,8 @@ class LLMPlannerNode(Node):
             f'[plan #{call_id}] {response.message}\n' +
             ''.join(f'  [{s["step_id"]}] {s.get("description", "?")}\n' for s in steps)
         )
-        self._save_plan(plan_yaml, prefix='plan', goal=goal, skills=skills)
+        self._save_plan(plan_yaml, prefix='normal_plan', goal=goal, skills=skills,
+                        mission_name=mission_name)
         return response
 
     def replan_task_callback(self, request, response):
@@ -117,6 +119,7 @@ class LLMPlannerNode(Node):
         failure_reason = request.failure_reason.strip()
         previous_failures = list(request.previous_failures)
         skills = [s for s in request.skills if s.strip()]
+        mission_name = request.mission_name.strip()
         self.get_logger().info(
             f'[replan #{call_id}] goal="{goal}" failed_step={failed_step} '
             f'reason="{failure_reason}" previous_attempts={len(previous_failures)}')
@@ -195,9 +198,10 @@ class LLMPlannerNode(Node):
             f'[replan #{call_id}] {response.message}\n' +
             ''.join(f'  [{s["step_id"]}] {s.get("description", "?")}\n' for s in new_steps)
         )
-        self._save_plan(plan_yaml, prefix='replan', goal=goal, skills=skills,
+        self._save_plan(plan_yaml, prefix='normal_replan', goal=goal, skills=skills,
                         failed_step=failed_step, failure_reason=failure_reason,
-                        previous_failures=previous_failures)
+                        previous_failures=previous_failures,
+                        mission_name=mission_name)
         return response
 
     # ------------------------------------------------------------------
@@ -235,12 +239,14 @@ class LLMPlannerNode(Node):
     def _save_plan(self, plan_yaml: str, *, prefix: str, goal: str,
                    skills: list = None,
                    failed_step: int = None, failure_reason: str = None,
-                   previous_failures: list = None):
+                   previous_failures: list = None,
+                   mission_name: str = ''):
         plans_dir = self._get_src_plans_path()
         os.makedirs(plans_dir, exist_ok=True)
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
         safe_goal = re.sub(r'[^\w\-]+', '_', goal.strip())[:40]
-        filename = f'{prefix}_{timestamp}_{self.llm_model_id}.yaml'
+        prefix_part = f'{mission_name}_{prefix}' if mission_name else prefix
+        filename = f'{prefix_part}_{timestamp}_{self.llm_model_id}.yaml'
         out_path = os.path.join(plans_dir, filename)
         try:
             with open(out_path, 'w', encoding='utf-8') as f:

@@ -23,7 +23,13 @@ so the LLM must produce a strategy different from both previous attempts.
 
 Usage:
   ros2 launch llm_planner test_replan_history.launch.py
+  ros2 launch llm_planner test_replan_history.launch.py config_file:=test_replan_history.yaml
+
+The config_file argument (or the TEST_REPLAN_CONFIG env var) selects which YAML
+file under <package>/config/ is used as the default plan_file.
 """
+
+import sys
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
@@ -32,11 +38,32 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 
+def _resolve_config_file() -> str:
+    """Pick the config filename at parse time.
+
+    Priority (highest first):
+      1. config_file:=<name> launch argument (parsed from sys.argv)
+      2. TEST_REPLAN_CONFIG environment variable
+      3. Default: test_replan_history.yaml
+    """
+    import os
+    for arg in sys.argv:
+        if arg.startswith('config_file:='):
+            return arg.split(':=', 1)[1]
+    return os.environ.get('TEST_REPLAN_CONFIG', 'test_replan_history.yaml')
+
+
 def generate_launch_description():
+    config_file_arg = DeclareLaunchArgument(
+        'config_file',
+        default_value=_resolve_config_file(),
+        description='Config YAML filename (under <package>/config/) used as the default plan_file',
+    )
+
     plan_file_arg = DeclareLaunchArgument(
         'plan_file',
         default_value=PathJoinSubstitution([
-            FindPackageShare('llm_planner'), 'config', 'test_replan_history.yaml'
+            FindPackageShare('llm_planner'), 'config', _resolve_config_file()
         ]),
         description='Path to plan YAML file to replan from',
     )
@@ -52,4 +79,4 @@ def generate_launch_description():
         }],
     )
 
-    return LaunchDescription([plan_file_arg, test_node])
+    return LaunchDescription([config_file_arg, plan_file_arg, test_node])

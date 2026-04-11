@@ -1,66 +1,162 @@
 # Sample plan for test_replan_history demo.
-# Simulates a scenario where step 0 failed once (could not navigate)
-# and the current attempt (asking customers to approach) also failed.
-# The LLM must propose a third, genuinely different strategy.
+# Scenario: The robot delivered the food to the chef (steps 0-4 done) but has failed
+# twice trying to reach the bar. The LLM must propose a third, different strategy.
 
-failed_step: 0
+failed_step: 5
 previous_failures:
-  - "The robot could not navigate to the nearest table"
-current_failure: >-
-  The robot asked customers to approach the counter but nobody responded.
+  - "NavigateTo bar timed out: main aisle to bar was blocked by a standing customer"
+current_failure: "NavigateTo bar_side_entrance failed: corridor too narrow for navigation"
 
-goal: "Greet the customer and take their order"
+mission_name: "restaurant_waiter"
+goal: "Take the customer's full order and deliver food to the kitchen chef and drink to the bar waiter"
 context: |
-  NAO robot acting as a waiter in a restaurant.
-  The robot is at the entrance. There are 5 tables; customers sit and wait.
+  The robot acting as a waiter in a restaurant.
+  The robot starts at the service counter. There are 5 tables where customers are seated.
+  The kitchen is at the back of the restaurant where the chef works.
+  The bar is at the front of the restaurant where the human bar waiter serves drinks.
 skills:
   - "Navigate to a location"
   - "Speak using text-to-speech"
   - "Listen and transcribe speech using speech-to-text"
   - "Detect and identify persons"
+  - "Extract specific information from text"
 steps:
   - step_id: 0
-    description: "Ask customers to approach the robot"
+    description: "Detect a customer ready to order"
     objective:
-      name: "Request customer approach"
+      name: "Detect ready customer"
       description: >
-        NAO robot acting as a waiter in a restaurant. The robot is at the entrance.
-        There are 5 tables; customers sit and wait.
-        Overall goal: Greet the customer and take their order.
-        In this step: Use the speaker to ask customers to come to the counter.
+        The robot acting as a waiter in a restaurant. The robot starts at the service
+        counter. There are 5 tables where customers are seated. The kitchen is at the
+        back and the bar is at the front.
+        Overall goal: Take the customer's full order and deliver food to the kitchen
+        chef and drink to the bar waiter.
+        In this step: Scan the dining area to detect a person ready to order.
+      outputs:
+        - customer_location
       steps:
-        - step: "Use Speak action with text 'Please come to the counter, I will be right with you.'"
-      constraints:
-        none
-      style:
-        - polite
-  - step_id: 1
-    description: "Greet the customer"
-    objective:
-      name: "Greet customer"
-      description: >
-        NAO robot acting as a waiter in a restaurant. The robot is at the entrance.
-        There are 5 tables; customers sit and wait.
-        Overall goal: Greet the customer and take their order.
-        In this step: Speak a polite greeting to the customer at the table.
-      steps:
-        - step: "Use Speak action with text 'Hello! I am your waiter today.'"
-      constraints:
-        none
-      style:
-        - polite
-  - step_id: 2
-    description: "Take the customer's order"
-    objective:
-      name: "Take order"
-      description: >
-        NAO robot acting as a waiter in a restaurant. The robot is at the entrance.
-        There are 5 tables; customers sit and wait.
-        Overall goal: Greet the customer and take their order.
-        In this step: Ask the customer what they would like to order.
-      steps:
-        - step: "Use Ask action with question 'What would you like to order?'"
-      constraints:
-        none
+        - step: "Activate person detection to scan the dining area"
+        - step: "Identify the table of the customer ready to order"
+        - step: "Store the customer's location as customer_location"
       style:
         - attentive
+
+  - step_id: 1
+    description: "Navigate to the customer's table"
+    objective:
+      name: "Navigate to customer"
+      description: >
+        The robot acting as a waiter in a restaurant. The robot starts at the service
+        counter. There are 5 tables where customers are seated. The kitchen is at the
+        back and the bar is at the front.
+        Overall goal: Take the customer's full order and deliver food to the kitchen
+        chef and drink to the bar waiter.
+        In this step: Navigate to the customer's table.
+      inputs:
+        - customer_location
+      steps:
+        - step: "Navigate to {customer_location}"
+      style:
+        - safe
+
+  - step_id: 2
+    description: "Greet customer and take the full order"
+    objective:
+      name: "Take full customer order"
+      description: >
+        The robot acting as a waiter in a restaurant. The robot starts at the service
+        counter. There are 5 tables where customers are seated. The kitchen is at the
+        back and the bar is at the front.
+        Overall goal: Take the customer's full order and deliver food to the kitchen
+        chef and drink to the bar waiter.
+        In this step: Greet the customer, listen to their full order, and extract the
+        first dish, second dish, and drink separately.
+      outputs:
+        - first_dish
+        - second_dish
+        - drink
+      steps:
+        - step: "Speak greeting: 'Hello! What would you like to order?'"
+        - step: "Listen and transcribe the customer's response"
+        - step: "Extract first dish and store as first_dish"
+        - step: "Extract second dish and store as second_dish"
+        - step: "Extract drink and store as drink"
+      constraints:
+        max_listen_attempts: 3
+      style:
+        - polite
+        - clear
+
+  - step_id: 3
+    description: "Navigate to the kitchen"
+    objective:
+      name: "Navigate to kitchen"
+      description: >
+        The robot acting as a waiter in a restaurant. The robot starts at the service
+        counter. There are 5 tables where customers are seated. The kitchen is at the
+        back and the bar is at the front.
+        Overall goal: Take the customer's full order and deliver food to the kitchen
+        chef and drink to the bar waiter.
+        In this step: Navigate from the customer's table to the kitchen at the back.
+      steps:
+        - step: "Navigate to kitchen"
+      style:
+        - safe
+
+  - step_id: 4
+    description: "Relay food order to the kitchen chef"
+    objective:
+      name: "Relay food to chef"
+      description: >
+        The robot acting as a waiter in a restaurant. The robot starts at the service
+        counter. There are 5 tables where customers are seated. The kitchen is at the
+        back and the bar is at the front.
+        Overall goal: Take the customer's full order and deliver food to the kitchen
+        chef and drink to the bar waiter.
+        In this step: Verbally communicate the first and second dish to the chef.
+      inputs:
+        - first_dish
+        - second_dish
+      steps:
+        - step: "Speak to the chef: first dish is {first_dish}, second dish is {second_dish}"
+        - step: "Wait for verbal acknowledgement from the chef"
+      style:
+        - clear
+        - concise
+
+  - step_id: 5
+    description: "Navigate to the bar (side entrance)"
+    objective:
+      name: "Navigate to bar side entrance"
+      description: >
+        The robot acting as a waiter in a restaurant. The robot starts at the service
+        counter. There are 5 tables where customers are seated. The kitchen is at the
+        back and the bar is at the front.
+        Overall goal: Take the customer's full order and deliver food to the kitchen
+        chef and drink to the bar waiter.
+        In this step: Attempt to reach the bar via the side entrance after the main
+        aisle was blocked.
+      steps:
+        - step: "Navigate to bar_side_entrance"
+      style:
+        - safe
+
+  - step_id: 6
+    description: "Relay drink order to the bar waiter"
+    objective:
+      name: "Relay drink to bar waiter"
+      description: >
+        The robot acting as a waiter in a restaurant. The robot starts at the service
+        counter. There are 5 tables where customers are seated. The kitchen is at the
+        back and the bar is at the front.
+        Overall goal: Take the customer's full order and deliver food to the kitchen
+        chef and drink to the bar waiter.
+        In this step: Verbally communicate the drink order to the human waiter at the bar.
+      inputs:
+        - drink
+      steps:
+        - step: "Speak to the bar waiter: the customer would like {drink}"
+        - step: "Wait for verbal acknowledgement from the bar waiter"
+      style:
+        - clear
+        - concise

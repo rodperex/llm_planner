@@ -32,11 +32,14 @@ setup(
         ]),
         ('share/' + package_name + '/config', [
             'config/test_plan.yaml',
+            'config/test_plan_2.yaml',
+            'config/test_parallel.yaml',
             'config/test_replan.yaml',
             'config/test_replan_history.yaml',
         ]),
         ('share/' + package_name + '/prompts', [
             'prompts/plan_prompt.txt',
+            'prompts/plan_parallel_prompt.txt',
             'prompts/replan_prompt.txt',
             'prompts/validate_plan_prompt.txt',
         ]),
@@ -56,6 +59,7 @@ setup(
         'console_scripts': [
             'llm_planner_node = llm_planner.llm_planner_node:main',
             'llm_planner_agent_node = llm_planner.llm_planner_agent_node:main',
+            'llm_planner_agent_parallel_node = llm_planner.llm_planner_agent_parallel_node:main',
             'test_plan_task = llm_planner.test_plan_task:main',
             'test_replan_task = llm_planner.test_replan_task:main',
             'test_replan_history = llm_planner.test_replan_history:main',

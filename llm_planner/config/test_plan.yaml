@@ -1,13 +1,21 @@
 # Sample goal file for test_plan_task
-# Loaded as launch arguments: goal, context, and skills
+# Scenario: The robot waiter takes the customer's full order (first dish, second dish,
+# drink), delivers the food items to the kitchen chef, then delivers the drink to the
+# bar waiter. Demonstrates split inter-step data flow across two destinations.
 
-goal: "Greet the customer and take their order"
+mission_name: "restaurant_waiter"
+goal: "Take the customer's full order and deliver food to the kitchen chef and drink to the bar waiter"
 context: |
-  NAO robot acting as a waiter in a restaurant.
-  The robot is at the entrance. There are 5 tables; customers sit and wait.
-  The robot must approach the customer, greet them politely, and collect their order.
+  The robot acting as a waiter in a restaurant.
+  The robot starts at the service counter. There are 5 tables where customers are seated.
+  The kitchen is at the back of the restaurant where the chef works.
+  The bar is at the front of the restaurant where the human bar waiter serves drinks.
+  The robot must identify a customer ready to order, take their full order (first dish,
+  second dish, and drink), go to the kitchen to relay the food to the chef, then go to
+  the bar to relay the drink to the human waiter.
 skills:
   - "Navigate to a location"
   - "Speak using text-to-speech"
   - "Listen and transcribe speech using speech-to-text"
   - "Detect and identify persons"
+  - "Extract specific information from text"
