@@ -58,11 +58,16 @@ class TestReplanTaskNode(Node):
             self.get_logger().error(f"Could not read plan file '{plan_file}': {e}")
             raise SystemExit(1)
 
-        # Extract goal from the YAML plan
+        # Extract goal and skills from the YAML plan
         import yaml
         try:
             doc = yaml.safe_load(plan_yaml)
             goal = doc.get('goal', '')
+            skills = doc.get('skills', [])
+            if isinstance(skills, list):
+                skills = [str(s) for s in skills if str(s).strip()]
+            else:
+                skills = []
         except yaml.YAMLError as e:
             self.get_logger().error(f"Invalid YAML in plan file: {e}")
             raise SystemExit(1)
@@ -76,7 +81,8 @@ class TestReplanTaskNode(Node):
         self._client.wait_for_service()
         self.get_logger().info(
             f'Service available — requesting replan for goal="{goal}", '
-            f'failed_step={failed_step}, reason="{failure_reason}"'
+            f'failed_step={failed_step}, reason="{failure_reason}", '
+            f'skills={len(skills)}'
         )
 
         req = ReplanTask.Request()
@@ -84,6 +90,7 @@ class TestReplanTaskNode(Node):
         req.plan_yaml = plan_yaml
         req.failed_step = failed_step
         req.failure_reason = failure_reason
+        req.skills = skills
 
         future = self._client.call_async(req)
         future.add_done_callback(self._on_response)

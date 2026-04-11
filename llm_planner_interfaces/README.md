@@ -51,7 +51,7 @@ Generates a revised YAML plan when a step has failed during execution. The new p
 
 ---
 
-### `StartGoal`
+### `StartMission`
 
 Sent to an orchestrator node to start executing a high-level goal end-to-end. The orchestrator is responsible for planning, BT generation, step execution, and replanning on failure.
 

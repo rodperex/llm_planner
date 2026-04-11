@@ -19,7 +19,11 @@ Standalone client to test the plan_task service.
 
 Usage:
   ros2 run llm_planner test_plan_task \
-    --ros-args -p goal:="Greet the customer" -p context:="NAO robot in a restaurant"
+    --ros-args -p goal:="Greet the customer" -p context:="NAO robot in a restaurant" \\
+    -p skills:="[\"Speak using TTS\", \"Listen using STT\", \"Navigate to a location\"]"
+
+The skills parameter is a string array listing the robot's available capabilities.
+If omitted, no skills constraint is sent and the LLM plans freely.
 """
 
 import rclpy
@@ -34,9 +38,12 @@ class TestPlanTaskNode(Node):
 
         self.declare_parameter('goal', '')
         self.declare_parameter('context', '')
+        self.declare_parameter('skills', [''])
 
         self._goal = self.get_parameter('goal').get_parameter_value().string_value
         self._task_context = self.get_parameter('context').get_parameter_value().string_value
+        skills_raw = self.get_parameter('skills').get_parameter_value().string_array_value
+        self._skills = [s for s in skills_raw if s.strip()]
 
         if not self._goal:
             self.get_logger().error("Parameter 'goal' is required")
@@ -50,6 +57,7 @@ class TestPlanTaskNode(Node):
         req = PlanTask.Request()
         req.goal = self._goal
         req.context = self._task_context
+        req.skills = self._skills
 
         future = self._client.call_async(req)
         future.add_done_callback(self._on_response)

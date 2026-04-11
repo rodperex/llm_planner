@@ -5,6 +5,8 @@
 string goal          # High-level goal description
 string context       # Optional context: robot role, environment, constraints, current state.
                      # Helps the LLM break the goal into relevant sequential steps.
+string[] skills      # Capabilities the robot has (e.g. "Navigate to a location",
+                     # "Speak using TTS"). The LLM plans *only* using these skills.
 ---
 bool success
 string plan_yaml     # YAML plan content (see plan_template.yaml for format)

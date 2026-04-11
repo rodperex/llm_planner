@@ -13,6 +13,11 @@ goal: "Greet the customer and take their order"
 context: |
   NAO robot acting as a waiter in a restaurant.
   The robot is at the entrance. There are 5 tables; customers sit and wait.
+skills:
+  - "Navigate to a location"
+  - "Speak using text-to-speech"
+  - "Listen and transcribe speech using speech-to-text"
+  - "Detect and identify persons"
 steps:
   - step_id: 0
     description: "Ask customers to approach the robot"

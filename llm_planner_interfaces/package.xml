@@ -3,7 +3,7 @@
 <package format="3">
   <name>llm_planner_interfaces</name>
   <version>0.0.1</version>
-  <description>Service interfaces for llm_planner (plan_task, replan_task, start_goal)</description>
+  <description>Service interfaces for llm_planner (plan_task, replan_task, start_mission)</description>
   <maintainer email="rodrigo.perez@urjc.es">Rodrigo Pérez-Rodríguez</maintainer>
   <license>Apache-2.0</license>
 

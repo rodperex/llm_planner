@@ -8,6 +8,8 @@ string failure_reason  # Why it failed: world error, unavailable BT node, timeou
                        # The LLM uses this to avoid the same failure in the new plan
 string[] previous_failures  # Failure reasons from earlier replans of the same step
                             # (empty on first replan; grows with each retry)
+string[] skills        # Capabilities the robot has. Preserved from the original plan
+                       # so the LLM replans within the same capability envelope.
 ---
 bool success
 string new_plan_yaml   # New YAML plan starting from current state

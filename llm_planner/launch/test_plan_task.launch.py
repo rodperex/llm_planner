@@ -34,16 +34,16 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
-def _load_default(key: str) -> str:
+def _load_default(key: str, fallback=''):
     """Read a default value from config/test_plan.yaml at parse time."""
     import os
     import ament_index_python.packages as ament_idx
     try:
         share = ament_idx.get_package_share_directory('llm_planner')
         with open(os.path.join(share, 'config', 'test_plan.yaml')) as f:
-            return yaml.safe_load(f).get(key, '')
+            return yaml.safe_load(f).get(key, fallback)
     except Exception:
-        return ''
+        return fallback
 
 
 def generate_launch_description():
@@ -69,6 +69,7 @@ def generate_launch_description():
         parameters=[{
             'goal': LaunchConfiguration('goal'),
             'context': LaunchConfiguration('context'),
+            'skills': _load_default('skills', []),
         }],
     )
 

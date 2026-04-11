@@ -128,7 +128,7 @@ llm_planner/               ← repo root
     └── srv/
         ├── PlanTask.srv
         ├── ReplanTask.srv
-        └── StartGoal.srv
+        └── StartMission.srv
 ```
 
 ---

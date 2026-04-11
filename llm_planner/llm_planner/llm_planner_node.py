@@ -71,9 +71,17 @@ class LLMPlannerNode(Node):
             call_id = self._call_counter
         goal = request.goal.strip()
         context = request.context.strip()
+        skills = [s for s in request.skills if s.strip()]
         self.get_logger().info(f'[plan #{call_id}] goal="{goal}"')
 
-        user_prompt = f'goal: "{goal}"\ncontext: "{context}"\n\nGenerate the execution plan.'
+        skills_block = ''
+        if skills:
+            skills_lines = '\n'.join(f'  - "{s}"' for s in skills)
+            skills_block = f'\nskills:\n{skills_lines}'
+        user_prompt = (
+            f'goal: "{goal}"\ncontext: "{context}"{skills_block}\n\n'
+            f'Generate the execution plan.'
+        )
         raw = self._call_llm(self._plan_prompt, user_prompt, call_id=f'plan #{call_id}')
 
         if raw is None:
@@ -97,7 +105,7 @@ class LLMPlannerNode(Node):
             f'[plan #{call_id}] {response.message}\n' +
             ''.join(f'  [{s["step_id"]}] {s.get("description", "?")}\n' for s in steps)
         )
-        self._save_plan(plan_yaml, prefix='plan', goal=goal)
+        self._save_plan(plan_yaml, prefix='plan', goal=goal, skills=skills)
         return response
 
     def replan_task_callback(self, request, response):
@@ -108,6 +116,7 @@ class LLMPlannerNode(Node):
         failed_step = request.failed_step
         failure_reason = request.failure_reason.strip()
         previous_failures = list(request.previous_failures)
+        skills = [s for s in request.skills if s.strip()]
         self.get_logger().info(
             f'[replan #{call_id}] goal="{goal}" failed_step={failed_step} '
             f'reason="{failure_reason}" previous_attempts={len(previous_failures)}')
@@ -140,10 +149,20 @@ class LLMPlannerNode(Node):
                 f'{blocked_lines}\n\n'
             )
 
+        skills_section = ''
+        if skills:
+            skills_lines = '\n'.join(f'  - {s}' for s in skills)
+            skills_section = (
+                f'ROBOT SKILLS (the robot has ONLY these capabilities — '
+                f'every step MUST use one of them):\n'
+                f'{skills_lines}\n\n'
+            )
+
         user_prompt = (
             f'ORIGINAL GOAL: "{goal}"\n\n'
             f'ORIGINAL CONTEXT (robot role — MUST be preserved in every objective.description):\n'
             f'  {original_context}\n\n'
+            f'{skills_section}'
             f'ALREADY COMPLETED STEPS (do not repeat):\n{achieved_text}\n\n'
             f'FAILED STEP {failed_step}: "{failed_desc}"\n'
             f'FAILURE REASON: {failure_reason}\n\n'
@@ -176,7 +195,7 @@ class LLMPlannerNode(Node):
             f'[replan #{call_id}] {response.message}\n' +
             ''.join(f'  [{s["step_id"]}] {s.get("description", "?")}\n' for s in new_steps)
         )
-        self._save_plan(plan_yaml, prefix='replan', goal=goal,
+        self._save_plan(plan_yaml, prefix='replan', goal=goal, skills=skills,
                         failed_step=failed_step, failure_reason=failure_reason,
                         previous_failures=previous_failures)
         return response
@@ -214,6 +233,7 @@ class LLMPlannerNode(Node):
             return ''
 
     def _save_plan(self, plan_yaml: str, *, prefix: str, goal: str,
+                   skills: list = None,
                    failed_step: int = None, failure_reason: str = None,
                    previous_failures: list = None):
         plans_dir = self._get_src_plans_path()
@@ -225,6 +245,9 @@ class LLMPlannerNode(Node):
         try:
             with open(out_path, 'w', encoding='utf-8') as f:
                 f.write(f'# goal: {goal}\n')
+                if skills:
+                    for s in skills:
+                        f.write(f'# skill: {s}\n')
                 if failed_step is not None:
                     f.write(f'# failed_step: {failed_step}\n')
                 if previous_failures:

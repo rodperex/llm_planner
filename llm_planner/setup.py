@@ -40,11 +40,11 @@ setup(
             'prompts/replan_prompt.txt',
         ]),
     ],
-    install_requires=['setuptools'],
+    install_requires=['setuptools', 'requests', 'pyyaml'],
     zip_safe=True,
-    maintainer='roi',
+    maintainer='Rodrigo Pérez-Rodríguez',
     maintainer_email='rodrigo.perez@urjc.es',
-    description='TODO: Package description',
+    description='ROS 2 node that generates and revises step-by-step YAML execution plans for service robots using an LLM.',
     license='Apache-2.0',
     extras_require={
         'test': [

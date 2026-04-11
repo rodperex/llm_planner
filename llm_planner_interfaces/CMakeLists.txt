@@ -7,7 +7,7 @@ find_package(rosidl_default_generators REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/PlanTask.srv"
   "srv/ReplanTask.srv"
-  "srv/StartGoal.srv"
+  "srv/StartMission.srv"
 )
 
 ament_export_dependencies(rosidl_default_runtime)
