@@ -16,12 +16,17 @@
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
+from launch.conditions import IfCondition
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    """Launch the LLM planner node standalone."""
+    """Launch the LLM planner node standalone.
+
+    node_type:=normal  →  llm_planner_node        (generate only)
+    node_type:=agent   →  llm_planner_agent_node   (generate + validate loop)
+    """
 
     provider_arg = DeclareLaunchArgument(
         'provider',
@@ -41,7 +46,14 @@ def generate_launch_description():
         description='API key (optional — auto-detected from env vars if empty)',
     )
 
-    llm_planner_node = Node(
+    node_type_arg = DeclareLaunchArgument(
+        'node_type',
+        default_value='normal',
+        description='Planner variant: "normal" (generate only) or "agent" (generate + validate)',
+    )
+
+    # ── Normal node ───────────────────────────────────────────────────────────
+    normal_node = Node(
         package='llm_planner',
         executable='llm_planner_node',
         name='llm_planner_node',
@@ -50,13 +62,35 @@ def generate_launch_description():
         parameters=[{
             'llm_provider': LaunchConfiguration('provider'),
             'llm_model_id': LaunchConfiguration('model'),
-            'llm_api_key': LaunchConfiguration('key'),
+            'llm_api_key':  LaunchConfiguration('key'),
         }],
+        condition=IfCondition(
+            PythonExpression(["'", LaunchConfiguration('node_type'), "' == 'normal'"])
+        ),
+    )
+
+    # ── Agent node (generate + 3-phase validation loop) ───────────────────────
+    agent_node = Node(
+        package='llm_planner',
+        executable='llm_planner_agent_node',
+        name='llm_planner_agent_node',
+        output='screen',
+        emulate_tty=True,
+        parameters=[{
+            'llm_provider': LaunchConfiguration('provider'),
+            'llm_model_id': LaunchConfiguration('model'),
+            'llm_api_key':  LaunchConfiguration('key'),
+        }],
+        condition=IfCondition(
+            PythonExpression(["'", LaunchConfiguration('node_type'), "' == 'agent'"])
+        ),
     )
 
     return LaunchDescription([
         provider_arg,
         model_arg,
         key_arg,
-        llm_planner_node,
+        node_type_arg,
+        normal_node,
+        agent_node,
     ])
