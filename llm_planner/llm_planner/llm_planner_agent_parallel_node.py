@@ -66,12 +66,18 @@ class LLMPlannerAgentParallelNode(LLMPlannerAgentNode):
         )
 
         # Re-load the parallel-aware plan prompt, overriding what super() loaded.
-        self._plan_prompt = self._load_prompt('plan_parallel_prompt.txt')
-        if not self._plan_prompt:
+        # Also update the parameter so the per-request reload in the callback picks it up.
+        parallel_prompt = self._load_prompt('plan_parallel_prompt.txt')
+        if parallel_prompt:
+            self.set_parameters([
+                rclpy.parameter.Parameter('plan_prompt_file', rclpy.Parameter.Type.STRING,
+                                          'plan_parallel_prompt.txt')
+            ])
+            self._plan_prompt = parallel_prompt
+        else:
             self.get_logger().warn(
                 'plan_parallel_prompt.txt not found — falling back to plan_prompt.txt'
             )
-            self._plan_prompt = self._load_prompt('plan_prompt.txt')
 
     # ─────────────────────────────────────────────────────────────────────────
     # Override: structural validation accepting parallel groups

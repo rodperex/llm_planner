@@ -39,12 +39,12 @@ class LLMPlannerNode(Node):
         self.declare_parameter('llm_api_key', '')
         self.declare_parameter('plan_prompt_file', 'plan_prompt.txt')
         self.declare_parameter('replan_prompt_file', 'replan_prompt.txt')
+        self.declare_parameter('save_plan', False)
 
         self.llm_provider = self.get_parameter('llm_provider').value.lower()
         self.llm_model_id = self.get_parameter('llm_model_id').value
+        self.save_plan    = self.get_parameter('save_plan').value
         self._setup_api_key()
-        self._plan_prompt = self._load_prompt(self.get_parameter('plan_prompt_file').value)
-        self._replan_prompt = self._load_prompt(self.get_parameter('replan_prompt_file').value)
 
         self._call_counter = 0
         self._call_lock = threading.Lock()
@@ -83,7 +83,9 @@ class LLMPlannerNode(Node):
             f'goal: "{goal}"\ncontext: "{context}"{skills_block}\n\n'
             f'Generate the execution plan.'
         )
-        raw = self._call_llm(self._plan_prompt, user_prompt, call_id=f'plan #{call_id}')
+        raw = self._call_llm(
+            self._load_prompt(self.get_parameter('plan_prompt_file').value),
+            user_prompt, call_id=f'plan #{call_id}')
 
         if raw is None:
             response.success = False
@@ -175,7 +177,9 @@ class LLMPlannerNode(Node):
             f'Do NOT plan any step that relies on the same capability.\n\n'
             f'Generate a new plan covering the REMAINING work using only alternative approaches.'
         )
-        raw = self._call_llm(self._replan_prompt, user_prompt, call_id=f'replan #{call_id}')
+        raw = self._call_llm(
+            self._load_prompt(self.get_parameter('replan_prompt_file').value),
+            user_prompt, call_id=f'replan #{call_id}')
 
         if raw is None:
             response.success = False
@@ -241,6 +245,8 @@ class LLMPlannerNode(Node):
                    failed_step: int = None, failure_reason: str = None,
                    previous_failures: list = None,
                    mission_name: str = ''):
+        if not self.save_plan:
+            return
         plans_dir = self._get_src_plans_path()
         os.makedirs(plans_dir, exist_ok=True)
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')

@@ -15,10 +15,11 @@ The repository contains two packages:
 
 Two node variants are available, selectable at launch with `node_type:=normal|agent`.
 
-| Mode | Node | `node_type` | Plan files |
+| Mode | Node | `node_type` | Plan files (when `save_plan:=true`) |
 |---|---|---|---|
 | **Normal** | `llm_planner_node` | `normal` | `plan_*.yaml` / `replan_*.yaml` |
 | **Agent** | `llm_planner_agent_node` | `agent` | `agent_plan_*.yaml` / `agent_replan_*.yaml` |
+| **Parallel** | `llm_planner_agent_parallel_node` | `parallel` | `parallel_plan_*.yaml` / `parallel_replan_*.yaml` |
 
 ---
 
@@ -155,6 +156,9 @@ ros2 launch llm_planner llm_planner.launch.py node_type:=agent provider:=openai 
 
 # Agent mode — local Ollama
 ros2 launch llm_planner llm_planner.launch.py node_type:=agent provider:=ollama model:=llama3.1
+
+# Any mode — save generated plans to disk
+ros2 launch llm_planner llm_planner.launch.py node_type:=agent provider:=openai model:=gpt-4o save_plan:=true
 ```
 
 ### Test plan generation
@@ -191,8 +195,9 @@ ros2 launch llm_planner test_replan_history.launch.py
 llm_planner/               ← repo root
 ├── llm_planner/           ← Python ROS 2 package
 │   ├── llm_planner/
-│   │   ├── llm_planner_node.py         Normal mode node
-│   │   ├── llm_planner_agent_node.py   Agent mode node (3-phase validation)
+│   │   ├── llm_planner_node.py                 Normal mode node
+│   │   ├── llm_planner_agent_node.py           Agent mode node (3-phase validation)
+│   │   ├── llm_planner_agent_parallel_node.py  Parallel mode node (extends agent)
 │   │   ├── test_plan_task.py           CLI client: PlanTask
 │   │   ├── test_replan_task.py         CLI client: ReplanTask
 │   │   └── test_replan_history.py      CLI client: ReplanTask with history
@@ -207,13 +212,16 @@ llm_planner/               ← repo root
 │   │   └── test_replan_history.yaml    plan + history for history test
 │   ├── prompts/
 │   │   ├── plan_prompt.txt             system prompt for PlanTask
+│   │   ├── plan_parallel_prompt.txt    system prompt for PlanTask (parallel mode)
 │   │   ├── replan_prompt.txt           system prompt for ReplanTask
 │   │   └── validate_plan_prompt.txt    system prompt for the feasibility judge (agent mode)
 │   └── generated_plans/               auto-saved plans (gitignored except .gitkeep)
 │       ├── plan_*.yaml                 saved by normal mode
 │       ├── replan_*.yaml               saved by normal mode
 │       ├── agent_plan_*.yaml           saved by agent mode
-│       └── agent_replan_*.yaml         saved by agent mode
+│       ├── agent_replan_*.yaml         saved by agent mode
+│       ├── parallel_plan_*.yaml        saved by parallel mode
+│       └── parallel_replan_*.yaml      saved by parallel mode
 └── llm_planner_interfaces/  ← CMake interfaces package
     └── srv/
         ├── PlanTask.srv
@@ -242,9 +250,10 @@ Both modes expose the same service interface.
 | `llm_model_id` | `gemini-2.5-flash` | Model identifier (provider-specific) |
 | `llm_api_url` | `''` | Override the default endpoint URL |
 | `llm_api_key` | `''` | API key (auto-detected from env vars if empty) |
-| `plan_prompt_file` | `plan_prompt.txt` | System prompt file for plan generation |
-| `replan_prompt_file` | `replan_prompt.txt` | System prompt file for replanning |
-| `validate_prompt_file` | `validate_plan_prompt.txt` | System prompt for the feasibility judge *(agent mode only)* |
+| `plan_prompt_file` | `plan_prompt.txt` | System prompt file for plan generation (reloaded from disk on every request) |
+| `replan_prompt_file` | `replan_prompt.txt` | System prompt file for replanning (reloaded from disk on every request) |
+| `validate_prompt_file` | `validate_plan_prompt.txt` | System prompt for the feasibility judge — reloaded on every request *(agent mode only)* |
+| `save_plan` | `false` | Save generated plans to `generated_plans/` on disk |
 
 ---
 

@@ -55,6 +55,12 @@ def generate_launch_description():
         ),
     )
 
+    save_plan_arg = DeclareLaunchArgument(
+        'save_plan',
+        default_value='false',
+        description='Save generated plans to disk (true/false).',
+    )
+
     # ── Normal node ───────────────────────────────────────────────────────────
     normal_node = Node(
         package='llm_planner',
@@ -66,6 +72,7 @@ def generate_launch_description():
             'llm_provider': LaunchConfiguration('provider'),
             'llm_model_id': LaunchConfiguration('model'),
             'llm_api_key':  LaunchConfiguration('key'),
+            'save_plan':    LaunchConfiguration('save_plan'),
         }],
         condition=IfCondition(
             PythonExpression(["'", LaunchConfiguration('node_type'), "' == 'normal'"])
@@ -83,6 +90,7 @@ def generate_launch_description():
             'llm_provider': LaunchConfiguration('provider'),
             'llm_model_id': LaunchConfiguration('model'),
             'llm_api_key':  LaunchConfiguration('key'),
+            'save_plan':    LaunchConfiguration('save_plan'),
         }],
         condition=IfCondition(
             PythonExpression(["'", LaunchConfiguration('node_type'), "' == 'agent'"])
@@ -100,6 +108,7 @@ def generate_launch_description():
             'llm_provider': LaunchConfiguration('provider'),
             'llm_model_id': LaunchConfiguration('model'),
             'llm_api_key':  LaunchConfiguration('key'),
+            'save_plan':    LaunchConfiguration('save_plan'),
         }],
         condition=IfCondition(
             PythonExpression(["'", LaunchConfiguration('node_type'), "' == 'parallel'"])
@@ -108,6 +117,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         provider_arg,
+        save_plan_arg,
         model_arg,
         key_arg,
         node_type_arg,

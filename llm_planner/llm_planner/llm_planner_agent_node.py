@@ -72,9 +72,11 @@ class LLMPlannerAgentNode(Node):
         self.declare_parameter('plan_prompt_file',   'plan_prompt.txt')
         self.declare_parameter('replan_prompt_file', 'replan_prompt.txt')
         self.declare_parameter('validate_prompt_file', 'validate_plan_prompt.txt')
+        self.declare_parameter('save_plan', False)
 
         self.llm_provider = self.get_parameter('llm_provider').value.lower()
         self.llm_model_id = self.get_parameter('llm_model_id').value
+        self.save_plan    = self.get_parameter('save_plan').value
         self._setup_api_key()
 
         self._plan_prompt     = self._load_prompt(self.get_parameter('plan_prompt_file').value)
@@ -123,7 +125,7 @@ class LLMPlannerAgentNode(Node):
         )
 
         plan_yaml = self._generate_with_validation(
-            system_prompt=self._plan_prompt,
+            system_prompt=self._load_prompt(self.get_parameter('plan_prompt_file').value),
             base_user_prompt=base_user_prompt,
             goal=goal,
             skills=skills,
@@ -217,7 +219,7 @@ class LLMPlannerAgentNode(Node):
         )
 
         plan_yaml = self._generate_with_validation(
-            system_prompt=self._replan_prompt,
+            system_prompt=self._load_prompt(self.get_parameter('replan_prompt_file').value),
             base_user_prompt=base_user_prompt,
             goal=goal,
             skills=skills,
@@ -440,7 +442,8 @@ class LLMPlannerAgentNode(Node):
         - Skill compliance (no implicit use of capabilities not in the list)
         Returns (True, 'OK') or (False, 'reason').
         """
-        if not self._validate_prompt:
+        validate_prompt = self._load_prompt(self.get_parameter('validate_prompt_file').value)
+        if not validate_prompt:
             self.get_logger().warn(
                 f'[{call_id}] validate_plan_prompt.txt not found — skipping Phase 2.'
             )
@@ -457,7 +460,7 @@ class LLMPlannerAgentNode(Node):
         )
 
         raw = self._call_llm(
-            self._validate_prompt, user_content,
+            validate_prompt, user_content,
             max_retries=2, base_delay=2.0,
             call_id=f'{call_id}/judge',
         )
@@ -661,6 +664,8 @@ class LLMPlannerAgentNode(Node):
     def _save_plan(self, plan_yaml, *, prefix, goal, skills=None,
                    failed_step=None, failure_reason=None, previous_failures=None,
                    mission_name=''):
+        if not self.save_plan:
+            return
         plans_dir = self._get_src_plans_path()
         os.makedirs(plans_dir, exist_ok=True)
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
