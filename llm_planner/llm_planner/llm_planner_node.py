@@ -79,8 +79,19 @@ class LLMPlannerNode(Node):
         if skills:
             skills_lines = '\n'.join(f'  - "{s}"' for s in skills)
             skills_block = f'\nskills:\n{skills_lines}'
+            
+        preconditions_block = ''
+        if request.preconditions:
+            pre_lines = '\n'.join(f'  - "{p}"' for p in request.preconditions)
+            preconditions_block = f'\npreconditions:\n{pre_lines}'
+            
+        postconditions_block = ''
+        if request.postconditions:
+            post_lines = '\n'.join(f'  - "{p}"' for p in request.postconditions)
+            postconditions_block = f'\npostconditions:\n{post_lines}'
+
         user_prompt = (
-            f'goal: "{goal}"\ncontext: "{context}"{skills_block}\n\n'
+            f'goal: "{goal}"\ncontext: "{context}"{skills_block}{preconditions_block}{postconditions_block}\n\n'
             f'Generate the execution plan.'
         )
         raw = self._call_llm(
@@ -162,11 +173,22 @@ class LLMPlannerNode(Node):
                 f'every step MUST use one of them):\n'
                 f'{skills_lines}\n\n'
             )
+            
+        preconditions_block = ''
+        if request.preconditions:
+            pre_lines = '\n'.join(f'  - "{p}"' for p in request.preconditions)
+            preconditions_block = f'PRECONDITIONS:\n{pre_lines}\n\n'
+            
+        postconditions_block = ''
+        if request.postconditions:
+            post_lines = '\n'.join(f'  - "{p}"' for p in request.postconditions)
+            postconditions_block = f'POSTCONDITIONS:\n{post_lines}\n\n'
 
         user_prompt = (
             f'ORIGINAL GOAL: "{goal}"\n\n'
             f'ORIGINAL CONTEXT (robot role — MUST be preserved in every objective.description):\n'
             f'  {original_context}\n\n'
+            f'{preconditions_block}{postconditions_block}'
             f'{skills_section}'
             f'ALREADY COMPLETED STEPS (do not repeat):\n{achieved_text}\n\n'
             f'FAILED STEP {failed_step}: "{failed_desc}"\n'

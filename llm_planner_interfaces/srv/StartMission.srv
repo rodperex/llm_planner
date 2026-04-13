@@ -6,6 +6,8 @@ string context    # Optional context: robot role, environment, constraints, curr
                   # Helps the planner break the goal into relevant steps.
 string[] skills   # Capabilities the robot has (e.g. "Navigate to a location",
                   # "Speak using TTS"). Passed verbatim to plan and replan requests.
+string[] preconditions  # Preconditions that must be met or avoided
+string[] postconditions # Postconditions for successful task completion
 string mission_name  # Optional short identifier used to prefix saved plan filenames.
 ---
 bool accepted     # False if orchestrator is already busy

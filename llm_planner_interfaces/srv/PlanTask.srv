@@ -7,6 +7,8 @@ string context       # Optional context: robot role, environment, constraints, c
                      # Helps the LLM break the goal into relevant sequential steps.
 string[] skills      # Capabilities the robot has (e.g. "Navigate to a location",
                      # "Speak using TTS"). The LLM plans *only* using these skills.
+string[] preconditions  # Constraints or conditions before action execution
+string[] postconditions # Expected results or invariants post-execution
 string mission_name  # Optional short identifier used to prefix saved plan filenames.
                      # If empty, defaults to the generic prefix ("plan" / "agent_plan").
 ---
