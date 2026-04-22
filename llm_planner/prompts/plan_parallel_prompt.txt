@@ -6,10 +6,45 @@ Each step represents one atomic behaviour executable by a single Behavior Tree.
 Requirements:
   - Break the goal into 3-8 steps (fewer is better).
   - Each step must be independently executable and verifiable.
+  - If a later step needs data gathered earlier (detected entities, spoken answers, extracted fields,
+    order items, names, destinations, etc.), the producer step MUST declare those exact
+    blackboard keys in objective.outputs and the consumer step MUST declare the same keys in
+    objective.inputs. Never leave shared data implicit.
+  - When an available skill already performs a complete interaction pattern in one step
+    (for example asking and capturing a response, or checking a condition and producing a
+    diagnostic output), prefer that skill instead of decomposing it into redundant sub-actions.
+  - If the goal requires finding a person/object whose location is unknown, the search step
+    must describe ACTIVE search while sensing, not just passive detection. If the available
+    skills support target configuration, search motion, and detection, mention that active
+    search pattern explicitly in the sub-actions.
   - If a 'skills:' list is provided, plan ONLY using those capabilities.
     Do NOT invent or assume any skill that is not explicitly listed.
     If the goal cannot be fully achieved with the listed skills, produce the best possible
     partial plan and note the limitation in the context field.
+  - For steps that require recoverable verification/check behavior, declare an explicit structured contract in the objective:
+      recovery_policy:
+        required: true|false
+        loop_until_success: true|false
+        retry_attempts: int|forever
+    This MUST be based on task logic, not wording style.
+  - `recovery_policy.required` means the step needs an explicit success branch and a separate failure-recovery branch that corrects or reacquires information.
+    Set it to false for ordinary action execution steps that may be retried but do not have a distinct recovery branch.
+  - If recovery_policy.required is true, objective.steps must include both branches:
+    1) success path when the check passes,
+    2) failure recovery path that gathers/corrects data.
+  - If the failure recovery path asks for corrected or replacement data that will be checked again on the next retry, it must explicitly include the actions needed to capture/process that new data and rewrite the same blackboard keys consumed by the verification path.
+    Do not stop at apologizing or asking again; include the full reacquisition/update flow.
+  - If recovery_policy.loop_until_success is true, the recovery path must be designed for repeated attempts until success.
+  - Use recovery_policy.retry_attempts to control retry bounds:
+    - forever means unbounded retries until success.
+    - a positive integer means bounded retries with that exact maximum attempts value.
+    - retry_attempts does NOT imply required=true by itself.
+  - Default to this logic unless the task clearly requires something else:
+    - `required: true` only for recoverable checks or steps with explicit correction/reacquisition paths.
+    - `required: false` for plain actions like navigation, speaking, or delivery, even if they may use bounded retries.
+    - `loop_until_success: true` only when the task says to keep trying until it works.
+    - `retry_attempts: forever` when the task says to keep trying with no fixed bound.
+    - If `required: false` and `loop_until_success: false`, use a neutral retry budget and do NOT expect a retry-control wrapper in the final BT.
   - Before acting on an entity (person, object, location), include a PERCEPTION or
     DETECTION step if the robot does not already know where that entity is.
   - Do NOT assume spatial or identity information that is not explicitly given in the
@@ -34,6 +69,13 @@ Requirements:
         consumed by a later step. Omit if this step produces no data for later steps.
         Each entry is a plain identifier. The BT generator will wire the relevant
         output port of the producing node to that blackboard key.
+        If later steps need distinct pieces of information separately (for example
+        first_dish, second_dish, and drink), declare those exact outputs here.
+      - recovery_policy: REQUIRED object for every step with this schema:
+          required: true|false
+          loop_until_success: true|false
+          retry_attempts: int|forever
+        Always include this block even when false/false.
       - steps: ordered list of sub-actions, where each entry is either:
           * a sequential sub-action:   - step: "<atomic action>"
           * a parallel group (use ONLY when the sub-actions are causally independent and
@@ -72,6 +114,10 @@ steps:
         - <blackboard_var_name>
       outputs:           # omit if this step produces no data for subsequent steps
         - <blackboard_var_name>
+      recovery_policy:
+        required: <true|false>
+        loop_until_success: <true|false>
+        retry_attempts: <int|forever>
       steps:
         - step: "<sequential sub-action>"
         - parallel:

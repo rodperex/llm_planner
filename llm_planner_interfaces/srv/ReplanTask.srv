@@ -12,6 +12,7 @@ string[] skills        # Capabilities the robot has. Preserved from the original
                        # so the LLM replans within the same capability envelope.
 string[] preconditions  # Constraints or conditions before action execution
 string[] postconditions # Expected results or invariants post-execution
+string useful_info # Useful information
 string mission_name    # Optional short identifier used to prefix saved plan filenames.
 ---
 bool success

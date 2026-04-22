@@ -311,6 +311,8 @@ class LLMPlannerNode(Node):
             'openai': ['OPENAI_API_KEY'],
             'anthropic': ['ANTHROPIC_API_KEY'],
             'deepseek': ['DEEPSEEK_API_KEY'],
+            'groq':      ['GROQ_API_KEY'],
+            'sambanova': ['SAMBANOVA_API_KEY'],
         }
         for env in env_map.get(provider, ['LLM_API_KEY']):
             key = os.getenv(env, '')
@@ -329,6 +331,8 @@ class LLMPlannerNode(Node):
             'anthropic': 'https://api.anthropic.com/v1/messages',
             'deepseek': 'https://api.deepseek.com/v1/chat/completions',
             'ollama': 'http://localhost:11434/v1/chat/completions',
+            'groq':      'https://api.groq.com/openai/v1/chat/completions',
+            'sambanova': 'https://api.sambanova.ai/v1/chat/completions',
         }
         url = (api_url if api_url
                else defaults.get(provider, 'https://api.openai.com/v1/chat/completions'))
