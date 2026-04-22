@@ -50,15 +50,51 @@ def generate_launch_description():
         'node_type',
         default_value='normal',
         description=(
-            'Planner variant: "normal" (generate only), "agent" (generate + validate), '
+            'Planner variant: "normal" (generate only), "mcp" (normal + MCP context), "agent" (generate + validate), '
             '"parallel" (agent + parallel sub-actions in objective.steps)'
         ),
+    )
+
+    mcp_enabled_arg = DeclareLaunchArgument(
+        'mcp_enabled',
+        default_value='false',
+        description='Enable MCP context enrichment (used by mcp node).',
+    )
+
+    mcp_cmd_arg = DeclareLaunchArgument(
+        'mcp_cmd',
+        default_value='ros2 run mcp_context_server mcp_context_server',
+        description='Command to start the MCP server process.',
+    )
+
+    mcp_timeout_arg = DeclareLaunchArgument(
+        'mcp_timeout_sec',
+        default_value='2.0',
+        description='Timeout for MCP calls in seconds.',
+    )
+
+    mcp_fail_open_arg = DeclareLaunchArgument(
+        'mcp_fail_open',
+        default_value='true',
+        description='If true, planner continues when MCP is unavailable.',
     )
 
     save_plan_arg = DeclareLaunchArgument(
         'save_plan',
         default_value='false',
         description='Save generated plans to disk (true/false).',
+    )
+
+    plan_prompt_file_arg = DeclareLaunchArgument(
+        'plan_prompt_file',
+        default_value='plan_prompt.txt',
+        description='Plan prompt file for any planner node.',
+    )
+
+    replan_prompt_file_arg = DeclareLaunchArgument(
+        'replan_prompt_file',
+        default_value='replan_prompt.txt',
+        description='Replan prompt file for any planner node.',
     )
 
     # ── Normal node ───────────────────────────────────────────────────────────
@@ -76,6 +112,30 @@ def generate_launch_description():
         }],
         condition=IfCondition(
             PythonExpression(["'", LaunchConfiguration('node_type'), "' == 'normal'"])
+        ),
+    )
+
+    # ── MCP normal node (generate only + MCP context enrichment) ───────────
+    mcp_node = Node(
+        package='llm_planner',
+        executable='mcp_llm_planner_node',
+        name='mcp_llm_planner_node',
+        output='screen',
+        emulate_tty=True,
+        parameters=[{
+            'llm_provider': LaunchConfiguration('provider'),
+            'llm_model_id': LaunchConfiguration('model'),
+            'llm_api_key':  LaunchConfiguration('key'),
+            'save_plan':    LaunchConfiguration('save_plan'),
+            'plan_prompt_file': LaunchConfiguration('plan_prompt_file'),
+            'replan_prompt_file': LaunchConfiguration('replan_prompt_file'),
+            'mcp_enabled': LaunchConfiguration('mcp_enabled'),
+            'mcp_cmd': LaunchConfiguration('mcp_cmd'),
+            'mcp_timeout_sec': LaunchConfiguration('mcp_timeout_sec'),
+            'mcp_fail_open': LaunchConfiguration('mcp_fail_open'),
+        }],
+        condition=IfCondition(
+            PythonExpression(["'", LaunchConfiguration('node_type'), "' == 'mcp'"])
         ),
     )
 
@@ -121,7 +181,14 @@ def generate_launch_description():
         model_arg,
         key_arg,
         node_type_arg,
+        plan_prompt_file_arg,
+        replan_prompt_file_arg,
+        mcp_enabled_arg,
+        mcp_cmd_arg,
+        mcp_timeout_arg,
+        mcp_fail_open_arg,
         normal_node,
+        mcp_node,
         agent_node,
         parallel_node,
     ])

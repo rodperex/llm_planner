@@ -39,8 +39,10 @@ setup(
         ]),
         ('share/' + package_name + '/prompts', [
             'prompts/plan_prompt.txt',
+            'prompts/mcp_plan_prompt.txt',
             'prompts/plan_parallel_prompt.txt',
             'prompts/replan_prompt.txt',
+            'prompts/mcp_replan_prompt.txt',
             'prompts/validate_plan_prompt.txt',
         ]),
     ],
@@ -58,6 +60,7 @@ setup(
     entry_points={
         'console_scripts': [
             'llm_planner_node = llm_planner.llm_planner_node:main',
+            'mcp_llm_planner_node = llm_planner.mcp_llm_planner_node:main',
             'llm_planner_agent_node = llm_planner.llm_planner_agent_node:main',
             'llm_planner_agent_parallel_node = llm_planner.llm_planner_agent_parallel_node:main',
             'test_plan_task = llm_planner.test_plan_task:main',
