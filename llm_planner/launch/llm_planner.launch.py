@@ -31,13 +31,13 @@ def generate_launch_description():
     provider_arg = DeclareLaunchArgument(
         'provider',
         default_value='openai',
-        description='LLM provider: gemini | openai | anthropic | deepseek | ollama',
+        description='LLM provider: gemini | openai | anthropic | deepseek | ollama | groq | sambanova',
     )
 
     model_arg = DeclareLaunchArgument(
         'model',
         default_value='gpt-4o',
-        description='Model ID (e.g. gemini-2.5-flash, gpt-4o, llama3.1)',
+        description='Model ID (e.g. gemini: gemini-2.5-flash, openai: gpt-4o, ollama: llama3.1, groq: llama-3.3-70b-versatile, sambanova: Meta-Llama-3.3-70B-Instruct).',
     )
 
     key_arg = DeclareLaunchArgument(
