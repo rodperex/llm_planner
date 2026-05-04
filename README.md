@@ -257,6 +257,58 @@ Both modes expose the same service interface.
 
 ---
 
+## Recovery Policy Contract
+
+The planner writes a `recovery_policy` block in every step objective. This is consumed later by `llm_bt_builder` to enforce BT-level semantics.
+
+```yaml
+recovery_policy:
+    required: <true|false>
+    loop_until_success: <true|false>
+    retry_attempts: <int|forever>
+```
+
+Recommended meaning:
+
+| Field | Meaning | Typical use |
+|---|---|---|
+| `required` | Step needs an explicit success path and a separate recovery path | Verification/check steps with corrective branch |
+| `loop_until_success` | Recovery logic must repeat until success | Search/reacquisition loops |
+| `retry_attempts` | Retry budget for BT retry controls | `forever` for unbounded loops, integer for bounded retries |
+
+Important:
+- If the step semantics are iterative (for example "until", "keep trying", "hasta que"), set `required: true`, `loop_until_success: true`, `retry_attempts: forever`.
+- Avoid contradictions where objective text says "until success" but policy is `false/false` or bounded.
+
+---
+
+## Integration With llm_bt_builder
+
+End-to-end contract:
+1. `llm_planner` generates step objectives, including `inputs`, `outputs`, and `recovery_policy`.
+2. `llm_bt_builder` receives each objective and validates generated BT XML against that contract.
+3. If policy is inconsistent with BT structure (for example missing recovery branch when `required: true`), BT generation is rejected and retried/fixed.
+
+This means planning quality directly affects BT validity. When debugging BT generation, always inspect the originating step objective first.
+
+---
+
+## Troubleshooting Plan Coherence
+
+If a generated BT does not match expected behavior:
+1. Check whether the step objective text implies iterative recovery ("until" logic).
+2. Verify `recovery_policy` matches that intent.
+3. Regenerate plan if there is objective-policy mismatch before retrying BT generation.
+
+Common anti-pattern:
+- Objective text: "spin until detect person"
+- Policy: `required: false`, `loop_until_success: false`, `retry_attempts: 3`
+
+Expected policy for that case:
+- `required: true`, `loop_until_success: true`, `retry_attempts: forever`
+
+---
+
 ## License
 
 Apache License 2.0 — see individual package files for details.
