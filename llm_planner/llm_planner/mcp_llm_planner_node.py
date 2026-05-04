@@ -24,7 +24,7 @@ import rclpy
 from rclpy.executors import MultiThreadedExecutor
 import yaml
 
-from llm_planner.llm_planner_node import LLMPlannerNode
+from llm_planner.llm_planner_node import LLMPlannerNode # LLMPlannerAgentNode
 
 
 class StdioMCPClient:
@@ -109,7 +109,12 @@ class StdioMCPClient:
             line = self.proc.stdout.readline()
             if not line:
                 raise RuntimeError("MCP server closed stdout")
-            msg = json.loads(line)
+            stripped = line.strip()
+            if not stripped.startswith('{'):
+                # Non-JSON line (e.g. ros2 run startup banners, warnings).
+                # Discard silently and keep waiting for the real response.
+                continue
+            msg = json.loads(stripped)
             if msg.get("id") != req_id:
                 continue
             if "error" in msg:
@@ -128,7 +133,7 @@ class StdioMCPClient:
             return result
 
 
-class MCPPlannerNode(LLMPlannerNode):
+class MCPPlannerNode(LLMPlannerNode): # LLMPlannerAgentNode
     # Extension pattern:
     # - Reuse LLMPlannerNode services/prompts/validation as-is.
     # - Inject MCP context right before calling base callbacks.

@@ -61,6 +61,8 @@ MAX_RETRIES = 6
 
 class LLMPlannerAgentNode(Node):
 
+    _RE_NAV_PLACEHOLDER = re.compile(r"\{\s*([^{}\s]+)\s*\}")
+
     def __init__(self):
         super().__init__('llm_planner_agent_node')
 
@@ -458,6 +460,54 @@ class LLMPlannerAgentNode(Node):
                 if not isinstance(key, str) or not key.strip():
                     return False, f'Step {sid} objective.outputs contains a non-string entry.'
                 available_outputs.add(key)
+
+        ok, msg = self._validate_navigation_mapping_rules(steps)
+        if not ok:
+            return False, msg
+
+        return True, 'OK'
+
+    def _validate_navigation_mapping_rules(self, steps):
+        """
+        Domain-specific guardrail for routing tasks:
+        reject plans that navigate using semantic category variables such as
+        '*_reason' instead of a mapped location/destination variable.
+        """
+        for i, step in enumerate(steps):
+            sid = step.get('step_id', i)
+            obj = step.get('objective', {}) or {}
+            obj_steps = obj.get('steps', []) or []
+
+            # Collect step lines in a normalized way.
+            step_lines = []
+            for entry in obj_steps:
+                if isinstance(entry, dict) and isinstance(entry.get('step'), str):
+                    step_lines.append(entry['step'])
+
+            for text in step_lines:
+                lower = text.lower()
+                if 'navigate' not in lower:
+                    continue
+
+                # Catch placeholders such as {validated_visit_reason} used as nav targets.
+                for match in self._RE_NAV_PLACEHOLDER.finditer(text):
+                    var_name = match.group(1)
+                    if var_name.lower().endswith('_reason') or 'reason' in var_name.lower():
+                        return False, (
+                            f'Step {sid} navigates using category variable "{var_name}". '
+                            f'Navigation targets must be mapped locations (for example '
+                            f'"destination_location"), not reason/category variables. '
+                            f'Add an explicit mapping step that outputs a destination key, '
+                            f'and make navigation consume that destination key.'
+                        )
+
+                # Catch textual variants with no placeholder but same semantics.
+                if 'visit reason' in lower and '{' not in text:
+                    return False, (
+                        f'Step {sid} describes navigation based on visit reason directly. '
+                        f'Add an explicit reason->destination mapping step and navigate '
+                        f'only with the mapped destination variable.'
+                    )
 
         return True, 'OK'
 

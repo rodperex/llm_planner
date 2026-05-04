@@ -23,6 +23,9 @@ Any step that navigates to, interacts with, or refers to a specific entity
 MUST be preceded by a step that detects or identifies that entity.
 It is an error to navigate to or interact with "a person" or "a table" without first
 detecting WHICH specific person or table.
+Exception: Named locations that are explicitly enumerated in the goal context, useful_info,
+or mission configuration are considered known a priori and do NOT require a prior
+detection step before navigation.
 
 RULE 4 — DEPENDENCY ORDER
 Each step must only use information that was available at the start of the plan

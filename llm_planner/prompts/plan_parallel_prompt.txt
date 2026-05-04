@@ -27,6 +27,18 @@ Requirements:
         loop_until_success: true|false
         retry_attempts: int|forever
     This MUST be based on task logic, not wording style.
+  - MANDATORY COHERENCE RULE for iterative goals:
+    - If the step description/task semantics mean "continue until condition becomes true"
+      (examples: "until", "keep trying", "spin/search until", Spanish "hasta que"),
+      you MUST set:
+        required: true
+        loop_until_success: true
+        retry_attempts: forever
+    - In that case objective.steps MUST explicitly include:
+      1) a condition/check success path,
+      2) a failure recovery/reacquisition path that is repeated.
+    - Never output a step where the natural-language objective says "until success"
+      but recovery_policy is false/false or bounded by a finite retry count.
   - `recovery_policy.required` means the step needs an explicit success branch and a separate failure-recovery branch that corrects or reacquires information.
     Set it to false for ordinary action execution steps that may be retried but do not have a distinct recovery branch.
   - If recovery_policy.required is true, objective.steps must include both branches:

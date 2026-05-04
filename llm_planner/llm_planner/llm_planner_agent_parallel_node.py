@@ -143,6 +143,10 @@ class LLMPlannerAgentParallelNode(LLMPlannerAgentNode):
                             f'robot capabilities list.'
                         )
 
+        ok, msg = self._validate_navigation_mapping_rules(steps)
+        if not ok:
+            return False, msg
+
         return True, 'OK'
 
     def _validate_obj_steps(self, sid, obj_steps):

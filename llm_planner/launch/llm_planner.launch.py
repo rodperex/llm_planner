@@ -57,7 +57,7 @@ def generate_launch_description():
 
     mcp_enabled_arg = DeclareLaunchArgument(
         'mcp_enabled',
-        default_value='false',
+        default_value='true',
         description='Enable MCP context enrichment (used by mcp node).',
     )
 
@@ -87,13 +87,13 @@ def generate_launch_description():
 
     plan_prompt_file_arg = DeclareLaunchArgument(
         'plan_prompt_file',
-        default_value='plan_prompt.txt',
+        default_value='mcp_plan_prompt.txt',
         description='Plan prompt file for any planner node.',
     )
 
     replan_prompt_file_arg = DeclareLaunchArgument(
         'replan_prompt_file',
-        default_value='replan_prompt.txt',
+        default_value='mcp_replan_prompt.txt',
         description='Replan prompt file for any planner node.',
     )
 

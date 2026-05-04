@@ -21,6 +21,8 @@ CRITICAL RULES:
   4. If the goal is truly unreachable without the failed capability, state it clearly in
      context and produce the best possible partial plan that makes the most progress.
   5. Do NOT repeat already-completed steps.
+  5a. step_id values in the new plan MUST always start at 0 and be sequential (0, 1, 2 …),
+      regardless of how many steps were already completed in the previous plan.
   6. If the input includes PREVIOUS FAILED STRATEGIES FOR THIS STEP, treat each listed
      strategy as a BLOCKED CAPABILITY — interpret it BROADLY. For example, if a previous
      attempt used navigation and it failed, treat ALL navigation-based approaches as
