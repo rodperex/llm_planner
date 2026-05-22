@@ -13,7 +13,7 @@ CRITICAL RULES:
      The failed capability may still be in the list — it is the specific sub-use that
      failed, not the entire skill (rule 1 below constrains the exact failure narrowly).
   1. Interpret the failure reason as NARROWLY as possible. Only the specific sub-capability
-     that failed is unavailable. Do NOT generalise: e.g. "could not navigate to location X"
+     that failed is unavailable. Do NOT generalise: a failure tied to one target/action instance
      means the robot cannot reach that specific target — it does NOT mean the robot cannot
      navigate at all or cannot use any spatial capability.
   2. Rethink the goal achievement strategy from scratch given the new constraint.
@@ -35,13 +35,19 @@ CRITICAL RULES:
      unavailable, not just the specific path or target. Each replan must use a genuinely
      different capability or modality that has not been attempted before.
   7. Steps must be executable with the robot's remaining capabilities.
+  7a. Favor granular replans: prefer more atomic steps over a few overloaded ones.
+     As a default, target 4-9 steps for the remaining mission unless the remainder is trivially short.
+  7b. Use one primary intention per step (detect OR navigate OR ask/capture OR extract OR verify OR deliver).
+     Do not mix acquisition + validation + decision logic in one step unless one explicit skill already bundles them.
+  7c. If information must be captured and then verified/filtered/routed, split into at least two steps
+     (producer with outputs, then consumer/validator with inputs).
   8. Before acting on an entity (person, object, location), include a PERCEPTION or
      DETECTION step if the robot does not already know where that entity is. Use the
      already-completed steps to infer what the robot has already perceived — do not
      re-detect something that was successfully identified before the failure.
      This rule applies even when changing strategy: if the new approach involves
      interacting with a specific entity, the robot must first identify WHICH one
-     (e.g. which person, which object, which location) — unless that was already
+   (for example, the specific target instance) — unless that was already
      established by a completed step.
   8. Do NOT assume spatial or identity information that is not explicitly given in the
      updated context. Ambiguity must be resolved through sensing, not assumption.
@@ -75,7 +81,7 @@ skills:           # echo the skills list if it was provided; omit block if none
   - "<skill 2>"
 steps:
   - step_id: 0
-    description: "<short label for this step, e.g. 'Detect nearest occupied table'>"
+      description: "<short label for this step>"
     skills_used:           # omit if no skills list was provided
       - "<skill from the ROBOT SKILLS list used in this step>"
     objective:

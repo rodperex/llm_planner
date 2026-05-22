@@ -3,12 +3,28 @@ Given a high-level goal, optional context, and the list of skills the robot has,
 
 Each step represents one atomic behaviour executable by a single Behavior Tree.
 Requirements:
-  - Break the goal into 3-8 sequential steps.
+  - Break the goal into 5-10 sequential steps by default.
+    Use fewer only when the task is truly short and cannot be meaningfully decomposed.
+    Prefer more, simpler steps over fewer, overloaded steps.
   - Each step must be independently executable and verifiable.
   - Each step must be as simple as possible.
+  - COMPLEXITY BUDGET PER STEP:
+    - One primary intention per step (detect OR navigate OR ask/capture OR extract OR verify OR deliver).
+    - Avoid mixing acquisition + validation + branching decisions in the same step unless a single provided skill
+      already encapsulates that exact pattern.
+    - Do not combine more than one independent data-production objective in one step.
+  - MANDATORY DECOMPOSITION FOR DATAFLOW:
+    - If a step captures information and a later action depends on checking/transforming/validating that information,
+      split into at least two steps:
+      1) acquisition/write step (declare objective.outputs),
+      2) validation/decision step (declare objective.inputs and any new outputs).
+    - Capture/acquisition and subsequent validation/checking MUST be separate steps.
+    - Data extraction/normalization and downstream actuation using that data MUST be separate steps.
+    - Entity detection and later interaction SHOULD be separate unless the skill is explicitly atomic
+      and already includes both operations.
   - If a later step needs data gathered earlier (detected entities, spoken answers, extracted fields,
     order items, names, destinations, etc.), the producer step MUST declare those exact
-    blackboard keys in objective.outputs and the consumer step MUST declare the same keys in
+    data keys in objective.outputs and the consumer step MUST declare the same keys in
     objective.inputs. Never leave shared data implicit.
   - When an available skill already performs a complete interaction pattern in one step
     (for example asking and capturing a response, or checking a condition and producing a
@@ -27,6 +43,10 @@ Requirements:
         loop_until_success: true|false
         retry_attempts: int|forever
     This MUST be based on task logic, not wording style.
+  - Forced plan termination MUST be explicit per step via:
+      allow_forced_plan_fail: true|false
+    Default is false. Set to true ONLY when the mission explicitly authorizes forced plan termination for that step.
+    If false, that step must not rely on forced plan termination behavior.
   - MANDATORY COHERENCE RULE for iterative goals:
     - If the step description/task semantics mean "continue until condition becomes true"
       (examples: "until", "keep trying", "spin/search until", Spanish "hasta que"),
@@ -44,13 +64,22 @@ Requirements:
   - If recovery_policy.required is true, objective.steps must include both branches:
     1) success path when the check passes,
     2) failure recovery path that gathers/corrects data.
-  - If the failure recovery path asks for corrected or replacement data that will be checked again on the next retry, it must explicitly include the actions needed to capture/process that new data and rewrite the same blackboard keys consumed by the verification path.
+  - If the failure recovery path asks for corrected or replacement data that will be checked again on the next retry, it must explicitly include the actions needed to capture/process that new data and update the same data keys consumed by the verification path.
     Do not stop at apologizing or asking again; include the full reacquisition/update flow.
   - If recovery_policy.loop_until_success is true, the recovery path must be designed for repeated attempts until success.
   - Use recovery_policy.retry_attempts to control retry bounds:
     - forever means unbounded retries until success.
     - a positive integer means bounded retries with that exact maximum attempts value.
     - retry_attempts does NOT imply required=true by itself.
+  - MANDATORY SUBSTEP PRECISION CONTRACT for objective.steps:
+    - Every substep must be operational and observable: specify the action, the target/data acted on, and the expected outcome/check.
+    - Do not use vague substeps such as "handle", "manage", "process", "monitor" alone.
+      If monitoring is required, state the exact condition and threshold to evaluate.
+    - If recovery_policy.required is true, substeps must explicitly show both:
+      1) the verification/check action, and
+      2) the corrective/reacquisition action that updates the same data key(s) used by the check.
+    - If two behaviors must stay coupled in one phase (for example an ongoing control action plus continuous arrival condition checking), describe the coupling explicitly in substeps as:
+      "while <ongoing action>, continuously <check condition>; when true, <transition action>".
   - Default to this logic unless the task clearly requires something else:
     - `required: true` only for recoverable checks or steps with explicit correction/reacquisition paths.
     - `required: false` for plain actions like navigation, speaking, or delivery, even if they may use bounded retries.
@@ -75,15 +104,12 @@ Requirements:
         and environment copied verbatim from the global context, then state the overall
         goal, and finally describe the specific task for this step. Example pattern:
         "<robot role from context>. Overall goal: <goal>. In this step: <specific task>."
-      - inputs: (optional) list of blackboard variable names this step READS, produced
+      - inputs: (optional) list of data keys this step READS, produced
         by a previous step. Omit if this step does not consume prior-step data.
         Each entry is a plain identifier (e.g. destination, user_name).
-        The BT generator will wire the relevant input port of the consuming node to
-        that blackboard key using the {identifier} syntax.
-      - outputs: (optional) list of blackboard variable names this step WRITES, to be
+      - outputs: (optional) list of data keys this step WRITES, to be
         consumed by a later step. Omit if this step produces no data for later steps.
-        Each entry is a plain identifier. The BT generator will wire the relevant
-        output port of the producing node to that blackboard key.
+        Each entry is a plain identifier.
         If later steps need distinct pieces of information separately (for example
         first_dish, second_dish, and drink), declare those exact outputs here.
       - recovery_policy: REQUIRED object for every step with this schema:
@@ -91,7 +117,12 @@ Requirements:
           loop_until_success: true|false
           retry_attempts: int|forever
         Always include this block even when false/false.
-      - steps: list of ordered atomic sub-actions the robot must perform
+      - allow_forced_plan_fail: REQUIRED boolean for every step.
+        Use true only if the mission explicitly allows forced plan termination in this step; otherwise false.
+      - steps: list of ordered atomic sub-actions the robot must perform.
+        Each item MUST include action + target/data + expected outcome/check.
+        Prefer explicit wording like: "Do X on Y; if/when Z, then W".
+        Keep sub-actions concise: usually 2-4 sub-actions per step.
       - constraints: relevant numeric or categorical limits (omit if none)
       - style: list of behavioral traits (e.g. polite, safe, clear)
 
@@ -115,16 +146,17 @@ steps:
       name: "<concise step name>"
       description: "<robot role + environment copied from context>. Overall goal: <goal>. In this step: <specific task for this step>"
       inputs:            # omit if this step reads no data from previous steps
-        - <blackboard_var_name>
+        - <step_data_key>
       outputs:           # omit if this step produces no data for subsequent steps
-        - <blackboard_var_name>
+        - <step_data_key>
       recovery_policy:
         required: <true|false>
         loop_until_success: <true|false>
         retry_attempts: <int|forever>
+      allow_forced_plan_fail: <true|false>
       steps:
-        - step: "<atomic sub-action naming the exact capability, sensor, or action used>"
-        - step: "<next atomic sub-action>"
+        - step: "<atomic sub-action with action + target/data + expected outcome/check>"
+        - step: "<next atomic sub-action with explicit condition/transition when needed>"
       constraints:
         <key>: <value>
       style:

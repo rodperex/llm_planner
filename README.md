@@ -116,9 +116,12 @@ When a phase fails, the exact error message is appended to the next LLM prompt u
 | Google Gemini | `gemini` | `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` |
 | Anthropic Claude | `anthropic` | `https://api.anthropic.com/v1/messages` |
 | DeepSeek | `deepseek` | `https://api.deepseek.com/v1/chat/completions` |
+| Groq | `groq` | `https://api.groq.com/openai/v1/chat/completions` |
+| SambaNova | `sambanova` | `https://api.sambanova.ai/v1/chat/completions` |
+| Cerebras Cloud | `cerebras` | `https://api.cerebras.ai/v1/chat/completions` |
 | Ollama (local) | `ollama` | `http://localhost:11434/v1/chat/completions` |
 
-API keys are read from the `llm_api_key` parameter or from the corresponding environment variables (`OPENAI_API_KEY`, `GEMINI_API_KEY` / `GOOGLE_API_KEY`, `ANTHROPIC_API_KEY`, `DEEPSEEK_API_KEY`). For Ollama no key is needed.
+API keys are read from the `llm_api_key` parameter or from the corresponding environment variables (`OPENAI_API_KEY`, `GEMINI_API_KEY` / `GOOGLE_API_KEY`, `ANTHROPIC_API_KEY`, `DEEPSEEK_API_KEY`, `GROQ_API_KEY`, `SAMBANOVA_API_KEY`, `CEREBRAS_API_KEY`). For Ollama no key is needed.
 
 ---
 
@@ -246,7 +249,7 @@ Both modes expose the same service interface.
 
 | Parameter | Default | Description |
 |---|---|---|
-| `llm_provider` | `gemini` | LLM provider: `gemini` \| `openai` \| `anthropic` \| `deepseek` \| `ollama` |
+| `llm_provider` | `gemini` | LLM provider: `gemini` \| `openai` \| `anthropic` \| `deepseek` \| `groq` \| `sambanova` \| `cerebras` \| `ollama` |
 | `llm_model_id` | `gemini-2.5-flash` | Model identifier (provider-specific) |
 | `llm_api_url` | `''` | Override the default endpoint URL |
 | `llm_api_key` | `''` | API key (auto-detected from env vars if empty) |

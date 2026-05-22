@@ -63,6 +63,7 @@ setup(
             'mcp_llm_planner_node = llm_planner.mcp_llm_planner_node:main',
             'llm_planner_agent_node = llm_planner.llm_planner_agent_node:main',
             'llm_planner_agent_parallel_node = llm_planner.llm_planner_agent_parallel_node:main',
+            'llm_multistep_planner_node = llm_planner.llm_multistep_planner_node:main',
             'test_plan_task = llm_planner.test_plan_task:main',
             'test_replan_task = llm_planner.test_replan_task:main',
             'test_replan_history = llm_planner.test_replan_history:main',

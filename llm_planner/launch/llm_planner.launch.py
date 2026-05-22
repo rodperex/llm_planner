@@ -24,20 +24,21 @@ from launch_ros.actions import Node
 def generate_launch_description():
     """Launch the LLM planner node standalone.
 
-    node_type:=normal  →  llm_planner_node        (generate only)
-    node_type:=agent   →  llm_planner_agent_node   (generate + validate loop)
+    node_type:=normal     →  llm_planner_node               (generate only)
+    node_type:=agent      →  llm_planner_agent_node          (generate + validate loop)
+    node_type:=multistep  →  llm_multistep_planner_node      (skeleton + step expansion)
     """
 
     provider_arg = DeclareLaunchArgument(
         'provider',
         default_value='openai',
-        description='LLM provider: gemini | openai | anthropic | deepseek | ollama | groq | sambanova',
+        description='LLM provider: gemini | openai | anthropic | deepseek | ollama | groq | sambanova | cerebras',
     )
 
     model_arg = DeclareLaunchArgument(
         'model',
         default_value='gpt-4o',
-        description='Model ID (e.g. gemini: gemini-2.5-flash, openai: gpt-4o, ollama: llama3.1, groq: llama-3.3-70b-versatile, sambanova: Meta-Llama-3.3-70B-Instruct).',
+        description='Model ID (e.g. gemini: gemini-2.5-flash, openai: gpt-4o, ollama: llama3.1, groq: llama-3.3-70b-versatile, sambanova: Meta-Llama-3.3-70B-Instruct, cerebras: llama3.1-8b).',
     )
 
     key_arg = DeclareLaunchArgument(
@@ -48,10 +49,11 @@ def generate_launch_description():
 
     node_type_arg = DeclareLaunchArgument(
         'node_type',
-        default_value='normal',
+        default_value='mcp',
         description=(
             'Planner variant: "normal" (generate only), "mcp" (normal + MCP context), "agent" (generate + validate), '
-            '"parallel" (agent + parallel sub-actions in objective.steps)'
+            '"parallel" (agent + parallel sub-actions in objective.steps), '
+            '"multistep" (incremental skeleton + per-step expansion)'
         ),
     )
 
@@ -175,6 +177,24 @@ def generate_launch_description():
         ),
     )
 
+    # ── Multistep node (incremental plan generation) ─────────────────────────
+    multistep_node = Node(
+        package='llm_planner',
+        executable='llm_multistep_planner_node',
+        name='llm_multistep_planner_node',
+        output='screen',
+        emulate_tty=True,
+        parameters=[{
+            'llm_provider': LaunchConfiguration('provider'),
+            'llm_model_id': LaunchConfiguration('model'),
+            'llm_api_key':  LaunchConfiguration('key'),
+            'save_plan':    LaunchConfiguration('save_plan'),
+        }],
+        condition=IfCondition(
+            PythonExpression(["'", LaunchConfiguration('node_type'), "' == 'multistep'"])
+        ),
+    )
+
     return LaunchDescription([
         provider_arg,
         save_plan_arg,
@@ -191,4 +211,5 @@ def generate_launch_description():
         mcp_node,
         agent_node,
         parallel_node,
+        multistep_node,
     ])

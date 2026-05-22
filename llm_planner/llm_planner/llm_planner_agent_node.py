@@ -67,7 +67,7 @@ class LLMPlannerAgentNode(Node):
         super().__init__('llm_planner_agent_node')
 
         # ── Parameters (identical to llm_planner_node) ────────────────────────
-        self.declare_parameter('llm_provider',       'gemini')
+        self.declare_parameter('llm_provider',       'gemini')  # openai|gemini|anthropic|deepseek|groq|sambanova|cerebras|ollama
         self.declare_parameter('llm_model_id',       'gemini-2.5-flash')
         self.declare_parameter('llm_api_url',        '')
         self.declare_parameter('llm_api_key',        '')
@@ -634,6 +634,7 @@ class LLMPlannerAgentNode(Node):
             'deepseek':  ['DEEPSEEK_API_KEY'],
             'groq':      ['GROQ_API_KEY'],
             'sambanova': ['SAMBANOVA_API_KEY'],
+            'cerebras':  ['CEREBRAS_API_KEY'],
         }
         for env in env_map.get(provider, ['LLM_API_KEY']):
             key = os.getenv(env, '')
@@ -654,6 +655,7 @@ class LLMPlannerAgentNode(Node):
             'ollama':    'http://localhost:11434/v1/chat/completions',
             'groq':      'https://api.groq.com/openai/v1/chat/completions',
             'sambanova': 'https://api.sambanova.ai/v1/chat/completions',
+            'cerebras':  'https://api.cerebras.ai/v1/chat/completions',
         }
         url = (api_url if api_url
                else defaults.get(provider, 'https://api.openai.com/v1/chat/completions'))
